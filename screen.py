@@ -63,6 +63,7 @@ class polyscreen:
 
         # Minimizing the conformer set, and hence saving the geometry of the lowest energy conformer
         res = AllChem.MMFFOptimizeMoleculeConfs(molObj, numThreads = self.threads)
+        mmffenergies = []
         for r in res:
             mmffenergies.append(r[1])
         lowest = mmffenergies.index(min(mmffenergies))
