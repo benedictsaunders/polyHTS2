@@ -37,7 +37,7 @@ def box(msg):
 
 def run(command):
     sleep(1)
-    p = sp.Popen(calc_params, stdout=sp.PIPE, encoding='utf8')
+    p = sp.Popen(command, stdout=sp.PIPE, encoding='utf8')
     output, _ = p.communicate()
     return output
 
