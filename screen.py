@@ -120,7 +120,7 @@ class polyscreen:
         vea = output[output.find("delta SCC EA") :].split()[4]
 
         # xTB WAVEFUNCTION CALCULATION (xtb4stda)
-        command = ["xtb4stda", xyzfile, solvent_params]
+        command = ["xtb4stda", xyzfile, self.solvent_params]
         output = run(command)
 
         # xTB EXCITATIONS CALCULATIONS
