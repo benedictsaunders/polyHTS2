@@ -145,6 +145,7 @@ class polyscreen:
             cols.insert(idx+1, name)
 
         df = pd.DataFrame(results)
+        df = df.T
         df.columns = cols
         df.to_csv("output.csv", index=False)
         return results, cols
@@ -164,10 +165,10 @@ def getProps(Id, monomers, style, length, solvent_params, threads):
     ps = polyscreen(Id, monomers, style, length, solvent_params, threads)
     ps.getPolymerWithConformer()
     results, cols = ps.runCalculations()
-
     os.chdir(pwd)
+    return [results, cols]
 
-def runScreen(monomer_list, style, length, solvent):
+def runScreen(name, monomer_list, style, length, solvent):
     """
     The screening is initialised, using concurrent.futures from within this function. Presently,
     the number of concurrent jobs can be changed with 'in_parallel', but the total cores and
@@ -198,26 +199,34 @@ def runScreen(monomer_list, style, length, solvent):
         args.append(l)
     in_parallel = 2
     chunksize = int(math.ceil(len(combinations) / in_parallel))
-
-    os.mkdir('screening')
-    os.chdir('screening')
+    pwd = os.getcwd()
+    os.mkdir(name)
+    os.chdir(name)
 
     # Launching the parallelised screening protocol
     with concurrent.futures.ProcessPoolExecutor(max_workers=in_parallel) as executor:
         x = executor.map(getProps, *zip(*args), chunksize=chunksize)
-    data = list(list(x)[0])
-    cols = list(x)[1]
-    props_df = pd.DataFrame(data)
-    props_df.columns = cols[0]
-    df.to_csv("output.csv", index=False)
+    lst = list(x)
+    transpose = list(map(list, zip(*lst)))
+    data = transpose[0]
+    cols = transpose[1][0]
 
+    props_df = pd.DataFrame(data)
+    print(props_df)
+    props_df.columns = cols
+    props_df.to_csv("output.csv", index=False)
+    os.chdir(pwd)
 #############################################################################################
 
-# Hardcoded list of monomers for testing
 ms = [
     'BrC1=CC2=CC3=C(C=C(Br)N3)C=C2N1',
     'BrC1=CC2=CC3=C(C=C(Br)O3)C=C2O1',
     'BrC1=CC=C(Br)C2=NON=C12',
+    'Brc3ccc(c2ccc(c1ccc(Br)cc1)cc2)cc3',
 ]
 
-runScreen(ms, 'AB', 8, 'h2o')
+runScreen('2n', ms, 'AB', 2, 'h2o')
+runScreen('3n', ms, 'AB', 3, 'h2o')
+runScreen('4n', ms, 'AB', 4, 'h2o')
+runScreen('5n', ms, 'AB', 5, 'h2o')
+runScreen('6n', ms, 'AB', 6, 'h2o')
