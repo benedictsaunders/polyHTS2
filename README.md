@@ -34,9 +34,9 @@ It is known that the conformer search is by far the rate limiting step 😎 of t
 
 ## To-do
 - [x] Upload to GitHub
-- [ ] Complete and log initial tests
+- [x] Complete and log initial tests
 - [ ] Include commandline capabilities
-- [ ] Read monomers from user-defined file
+- [x] Read monomers from user-defined file
 - [ ] Allow user to change number of conformers
 - [ ] Allow user to retrieve selected geometries as XYZ/MOL files (Probably a good idea to align and minimise RMS!)
 - [ ] SQL Integration! CSVs are testing my patience, and pandas is only so good...
