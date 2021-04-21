@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-import math, os, shutil, itertools, stk, time, concurrent.futures, string
+import math, os, shutil, itertools, stk, time, concurrent.futures, string, os.path
 import subprocess as sp
 import pandas as pd
 import numpy as np
+import argparse
 
 from rdkit import Chem
 from rdkit.Chem import rdmolfiles, rdmolops, SanitizeMol, rdDistGeom, AllChem
@@ -218,6 +219,10 @@ def runScreen(name, monomer_list, style, length, solvent):
     os.chdir(pwd)
 #############################################################################################
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-f', dest='filename', default='monomers.txt')
+targs = parser.parse_args()
+
 ms = [
     'BrC1=CC2=CC3=C(C=C(Br)N3)C=C2N1',
     'BrC1=CC2=CC3=C(C=C(Br)O3)C=C2O1',
@@ -225,8 +230,12 @@ ms = [
     'Brc3ccc(c2ccc(c1ccc(Br)cc1)cc2)cc3',
 ]
 
-runScreen('2n', ms, 'AB', 2, 'h2o')
-runScreen('3n', ms, 'AB', 3, 'h2o')
-runScreen('4n', ms, 'AB', 4, 'h2o')
-runScreen('5n', ms, 'AB', 5, 'h2o')
+if (os.path.isfile(targs.filename)):
+    with open(targs.filename, 'r') as f:
+        monomers = f.readlines()
+    monomers = [x.strip() for x in monomers]
+else:
+    monomers = ms
+
 runScreen('6n', ms, 'AB', 6, 'h2o')
+
