@@ -41,5 +41,5 @@ def run(command):
     output, _ = p.communicate()
     return output
 
-def remove_junk():
+def removeJunk():
     os.system('rm charges charges3 energy tda.dat wfn.xtb wbo xtbopt* xtbrestart .xtboptok')
