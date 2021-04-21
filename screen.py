@@ -138,7 +138,8 @@ class polyscreen:
         # Processing results
         results = [self.Id, self.smiles, E_xtb, E_solv, vip, vea, gap, fL]
         cols = ['Id', 'smi', 'E_xtb', 'E_solv', 'vip', 'vea', 'gap', 'fL']
-
+        removeJunk()
+        
         # Adding A/B/C etc titles to columns so we can have monomer smiles in an individual column
         for idx, monomer in enumerate(self.monomers):
             name = list(string.ascii_uppercase)[idx]
