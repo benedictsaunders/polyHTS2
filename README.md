@@ -39,5 +39,6 @@ It is known that the conformer search is by far the rate limiting step 😎 of t
 - [x] Read monomers from user-defined file
 - [ ] Allow user to change number of conformers
 - [ ] Allow user to retrieve selected geometries as XYZ/MOL files (Probably a good idea to align and minimise RMS!)
-- [ ] SQL Integration! CSVs are testing my patience, and pandas is only so good...
+- [ ] ~~PostreSQL Integration! CSVs are testing my patience, and pandas is only so good...~~
+- [ ] SQLite Integration!
 - [ ] Provide bencmarks regarding polymer lengths and core counts etc.
