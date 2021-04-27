@@ -26,7 +26,7 @@ python screen.py -f <monomers_list>     # List of SMILES strings, default is mon
                  -s <solvent>           # Deafult 'h2o'
 ```
 
-In your own python script, running a screen is done simply with
+Or, in your own python script, running a screen is done simply with
 ```python
   runScreen(
     <monomer_list>, 
