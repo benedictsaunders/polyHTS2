@@ -1,0 +1,5 @@
+Brc1ccc(Br)cc1
+Brc1cnc(Br)cn1
+O=S3(=O)c1cc(Br)ccc1c2ccc(Br)cc23
+Brc1ccc(Br)s1
+BrC1=CC2=CC3=C(C=C(Br)S3)C=C2S1
