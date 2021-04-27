@@ -1,28 +1,22 @@
 # polyHTS2
 Building on [polyHTS by Liam Wilbraham](https://github.com/LiamWilbraham/polyhts), polyHTS2 is an updated version containing more rigourous methods of retreiving data from output files, as well as some improvements to molecular handling and parallelisation. It was developed during my time as a researcher in the Zwijnenburg Group at UCL.
 
-PolyHTS2 has the same prerequisites as its predecessor:
+PolyHTS2 has the following prerequisites:
 * RDkit
 * stk
 * xTB 5.6.4SE
 * xTB4sTDA
 * sTDA
-
-and also
 * pandas
+* sqlite3
 
+## What does it do?
+
+Given a list of monomers in the form of SMILES strings, polyHTS2 finds all the possible combinations of these monomers, which are then used to define a polymer. Each polymer undergoes a conformer search; every conformer is relaxed with MMFF94. The lowest energy conformer is then treated with xTB (SE geometry optimisation, VIP, VEA) and also sTDA (optical gap, oscillator strength).
 
 ## Usage
-The screening protocol can be launched with 
-```python
-  runScreen(
-    <monomer_list>, 
-    <repeat_unit_style>,
-    <number_of_repeat_units>,
-    <solvent>,                # as defined in the xtb documentation, and near the top of utils.py
-    )
-```
-Alternatively, one can use `screen.py` from the command line/terminal with the following arguments:
+
+The screen can be started from the command line/terminal with the following arguments:
 ```
 python screen.py -f <monomers_list>     # List of SMILES strings, default is monomers.txt
                  -l <polymer length>    # Number of repeat units, not separate monomers, default 4
@@ -32,8 +26,18 @@ python screen.py -f <monomers_list>     # List of SMILES strings, default is mon
                  -s <solvent>           # Deafult 'h2o'
 ```
 
+In your own python script, running a screen is done simply with
+```python
+  runScreen(
+    <monomer_list>, 
+    <repeat_unit_style>,
+    <number_of_repeat_units>,
+    <solvent>,                # as defined in the xtb documentation, and near the top of utils.py
+    )
+```
+The default values are set by `argparse` when handing command line arguments, and not when executing `runScreen`.
 
-and outputs a csv file:
+Currently, the output has the form:
 ID | Monomer SMILES | Polymer SMILES | E_xtb | E_solv | VIP | VEA | Opitical gap | Osc. strength|Duration|
 -- | -------------- | -------------- | ----- | ------ | --- | --- | ------------ | -------------|--------|
 ⋮|⋮|⋮|⋮|⋮|⋮|⋮|⋮|⋮|⋮
@@ -46,7 +50,7 @@ It is known that the conformer search is by far the rate limiting step 😎 of t
 ## To-do
 - [x] Upload to GitHub
 - [x] Complete and log initial tests
-- [ ] Include commandline capabilities
+- [x] Include commandline capabilities
 - [x] Read monomers from user-defined file
 - [ ] Allow user to change number of conformers
 - [ ] Allow user to retrieve selected geometries as XYZ/MOL files (Probably a good idea to align and minimise RMS!)
