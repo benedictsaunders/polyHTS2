@@ -21,13 +21,10 @@ valid_solvents = [
     "toluene",
 ]
 
-def log(s, homedir):
-    pwd = os.getcwd()
-    os.chdir(homedir)
+def log(s):
     with open('output.log', 'a') as logfile:
-        logfile.write(s)
+        logfile.write(f"[{time.strftime("%H:%M:%S",time.localtime())}]: {s}")
         logfile.write('\n')
-    os.chdir(pwd)
 
 def box(msg):
     row = len(msg) + 2
