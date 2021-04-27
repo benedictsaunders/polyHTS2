@@ -17,15 +17,26 @@ The screening protocol can be launched with
 ```python
   runScreen(
     <monomer_list>, 
-    <repeat_unit_style>,      #as defined in stk, such as 'AB' for an AB copolymer
+    <repeat_unit_style>,
     <number_of_repeat_units>,
     <solvent>,                # as defined in the xtb documentation, and near the top of utils.py
     )
 ```
+Alternatively, one can use `screen.py` from the command line/terminal with the following arguments:
+```
+python screen.py -f <monomers_list>     # List of SMILES strings, default is monomers.txt
+                 -l <polymer length>    # Number of repeat units, not separate monomers, default 4
+                 -r <repeat_style>      # E.g. A for a homopolymer, AB for a binary copolymer, default AB
+                 -p <parallel_workers>  # Should be $NSLOTS/OMP_NUM_THREADS
+                 -n <environment_name>  # A new directory where everything is written and saved, default 'screen'
+                 -s <solvent>           # Deafult 'h2o'
+```
+
+
 and outputs a csv file:
-ID | Monomer SMILES | Polymer SMILES | E_xtb | E_solv | VIP | VEA | Opitical gap | Osc. strength
--- | -------------- | -------------- | ----- | ------ | --- | --- | ------------ | -------------
-⋮|⋮|⋮|⋮|⋮|⋮|⋮|⋮|⋮
+ID | Monomer SMILES | Polymer SMILES | E_xtb | E_solv | VIP | VEA | Opitical gap | Osc. strength|Duration|
+-- | -------------- | -------------- | ----- | ------ | --- | --- | ------------ | -------------|--------|
+⋮|⋮|⋮|⋮|⋮|⋮|⋮|⋮|⋮|⋮
 
 
 In fact, there will be a separate monomer SMILES column for each of the unique monomers used to create each polymer.
