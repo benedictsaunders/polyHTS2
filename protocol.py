@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-##########
 import math, os, shutil, itertools, stk, time, concurrent.futures, string, os.path
 import subprocess as sp
 import pandas as pd
@@ -205,10 +204,10 @@ def runScreen(name, monomer_list, style, length, solvent, parallel):
     """
     # Check solvent validity
     if solvent != None:
-        if solvent not in valid_solvents:
+        if solvent not in constants.SOLVENTS:
             raise Exception(
                 "Invalid solvent choice. Valid solvents:",
-                [i for i in valid_solvents],
+                [i for i in constants.SOLVENTS],
             )
         else:
             solvent_params = f"-gbsa {solvent}"
@@ -223,7 +222,7 @@ def runScreen(name, monomer_list, style, length, solvent, parallel):
     n = len(set([char for char in style]))
     combinations = getCombinations(monomer_list, n, False)
     threads = int(os.environ['OMP_NUM_THREADS'])
-
+    chunksize = int(math.ceil(len(combinations) / (2*parallel)))
     # Combining the arguments for getProps into iterables to be cycled with concurrent.futures.
     args = []
     for idx, combination in enumerate(combinations):
@@ -243,8 +242,8 @@ def runScreen(name, monomer_list, style, length, solvent, parallel):
 
     # Launching the parallelised screening protocol
     print("Beginning parallelisation")
-    with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
-        x = executor.map(getProps, *zip(*args))
+    with concurrent.futures.ProcessPoolExecutor(max_workers=parallel) as executor:
+        x = executor.map(getProps, *zip(*args), chunksize=chunksize)
     lst = list(x)
     transpose = list(map(list, zip(*lst)))
     data = transpose[0]

@@ -8,20 +8,6 @@ from rdkit.Chem import rdmolops
 import time
 from time import sleep
 
-valid_solvents = [
-    "acetone",
-    "acetonitrile",
-    "benzene",
-    "chcl3",
-    "cs2",
-    "dmso",
-    "ether",
-    "h2o",
-    "methanol",
-    "thf",
-    "toluene",
-]
-
 def listelementsToString(lst):
     return [str(i) for i in lst]
 
