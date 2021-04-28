@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-import math, os, shutil, itertools, stk, time, concurrent.futures, string, os.path,
+##########
+import math, os, shutil, itertools, stk, time, concurrent.futures, string, os.path
 import subprocess as sp
 import pandas as pd
 import numpy as np
@@ -7,9 +8,10 @@ import argparse
 
 from rdkit import Chem
 from rdkit.Chem import rdmolfiles, rdmolops, SanitizeMol, rdDistGeom, AllChem
-from timeit import default_timer as timer
 from time import sleep, time
 from utils import *
+import sqlite3
+import sql
 
 class polyscreen:
     def __init__(self, Id, monomers, style, length, solvent_params, threads):
@@ -102,7 +104,7 @@ class polyscreen:
         if len(self.solvent_params) > 0:
             E_xtb, E_solv = float(E_line[-1]), float(solv_line[-1])
         else:
-            E_xtb, E_solv = float(E_line[-1]), None
+            E_xtb, E_solv = float(E_line[-1]), 0
 
         shutil.copy("xtbopt.xyz", f"{str(self.Id)}-opt.xyz")
         xyzfile = f"{self.Id}-opt.xyz"
@@ -140,7 +142,9 @@ class polyscreen:
         results = [self.Id, self.smiles, self.length, E_xtb, E_solv, vip, vea, gap, fL]
         cols = ['Id', 'smi', 'length', 'E_xtb', 'E_solv', 'vip', 'vea', 'gap', 'fL']
         removeJunk()
+
         # Adding A/B/C etc titles to columns so we can have monomer smiles in an individual column
+
         for idx, monomer in enumerate(self.monomers):
             name = list(string.ascii_uppercase)[idx]
             results.insert(idx+1, monomer)
@@ -150,15 +154,16 @@ class polyscreen:
         df = df.T
         df.columns = cols
         df.to_csv("output.csv", index=False)
+
         return results, cols
 
-def getProps(Id, monomers, style, length, solvent_params, threads):
+def getProps(Id, monomers, style, length, solvent_params, threads, name):
     """
     This function allows for the parallelisation of the screening protocol using the
     screening class, defined above. Each polymer is given its own directory wherein the
     ETKDG and xTB geometries are saved, as well as the logs of the xTB calculations.
     """
-    start = timer()
+    start = int(time.time())
     pwd = os.getcwd()
     log(f"Starting polymer {str(Id)}")
     os.mkdir(str(Id))
@@ -168,14 +173,28 @@ def getProps(Id, monomers, style, length, solvent_params, threads):
     ps.getPolymerWithConformer()
     results, cols = ps.runCalculations()
     os.chdir(pwd)
-    end = timer()
+    end = int(time.time())
     duration = (end-start)/60
 
     cols.append('Dur')
     results.append(duration)
+    sql_results = results[-7:]
+
+    connection = sql.newConnection(f'../{name}.db')
+    sql.updateData(connection, sql_results, Id)
+    del connection
+
     log(f"Done polymer {str(Id)}")
-    
+
     return [results, cols]
+
+def getCombinations(monomers, n, toFile):
+    combinations = list(itertools.combinations_with_replacement(monomers, n))
+    enumerated_combinations = enumerate(combinations)
+    if toFile:
+        with open('combinations.txt', 'w+') as f:
+            return
+    return combinations
 
 def runScreen(name, monomer_list, style, length, solvent, parallel):
     """
@@ -196,24 +215,36 @@ def runScreen(name, monomer_list, style, length, solvent, parallel):
     else:
         solvent_params = ""
 
+    # Database shenanigans
+    connection = sql.newConnection(f'{name}.db')
+    sql.newTable(connection, style)
+
     # Generate all possible combinations of monomers from the provided list.
     n = len(set([char for char in style]))
-    combinations = list(itertools.combinations_with_replacement(monomer_list, n))
+    combinations = getCombinations(monomer_list, n, False)
     threads = int(os.environ['OMP_NUM_THREADS'])
 
     # Combining the arguments for getProps into iterables to be cycled with concurrent.futures.
     args = []
     for idx, combination in enumerate(combinations):
-        l = [idx, combination, style, length, solvent_params, threads]
+        l = [idx, combination, style, length, solvent_params, threads, name]
+        empty_data = []
+        for c in combination:
+            empty_data.append(quotes(c))
+        empty_data.insert(0, idx)
+        empty_data.append([length, 0, 0, 0, 0, 0, 0, 0])
+        sql.insertData(connection, flatten_list(empty_data), style)
         args.append(l)
-    chunksize = int(math.ceil(len(combinations) / parallel))
+    chunksize = 20
+    print(args)
     pwd = os.getcwd()
     os.mkdir(name)
     os.chdir(name)
 
     # Launching the parallelised screening protocol
-    with concurrent.futures.ProcessPoolExecutor(max_workers=parallel) as executor:
-        x = executor.map(getProps, *zip(*args), chunksize=chunksize)
+    print("Beginning parallelisation")
+    with concurrent.futures.ProcessPoolExecutor(max_workers=4) as executor:
+        x = executor.map(getProps, *zip(*args))
     lst = list(x)
     transpose = list(map(list, zip(*lst)))
     data = transpose[0]

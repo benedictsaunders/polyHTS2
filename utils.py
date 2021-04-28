@@ -5,6 +5,7 @@ from rdkit import Chem
 import pandas as pd
 import rdkit
 from rdkit.Chem import rdmolops
+import time
 from time import sleep
 
 valid_solvents = [
@@ -21,9 +22,16 @@ valid_solvents = [
     "toluene",
 ]
 
+def listelementsToString(lst):
+    return [str(i) for i in lst]
+
+def quotes(s):
+    return f"'{s}'"
+
 def log(s):
     with open('output.log', 'a') as logfile:
-        logfile.write(f"[{time.strftime("%H:%M:%S",time.localtime())}]: {s}")
+        t = time.strftime("%H:%M:%S")
+        logfile.write(f"[{t}]: {s}")
         logfile.write('\n')
 
 def box(msg):
@@ -40,3 +48,13 @@ def run(command):
 
 def removeJunk():
     os.system('rm charges charges3 energy tda.dat wfn.xtb wbo xtbopt* xtbrestart .xtboptok')
+
+def flatten_list(nd_list):
+    flat_list = []
+    for i in nd_list:
+        if type(i) is list:
+            for item in i:
+                flat_list.append(item)
+        else:
+            flat_list.append(i)
+    return flat_list
