@@ -32,17 +32,19 @@ Or, in your own python script, running a screen is done simply with
     <monomer_list>, 
     <repeat_unit_style>,
     <number_of_repeat_units>,
-    <solvent>,                # as defined in the xtb documentation, and near the top of utils.py
+    <solvent>,                # as defined in the xtb documentation, and near the top of constants.py
     )
 ```
 You must set `OMP_NUM_THREADS` otherwise polyHTS will use as many cores as are available. This will likely results in massive inefficiencies, particularly if you specify more that one parallel worker.
 
 The default values are set by `argparse` when handing command line arguments, and not when executing `runScreen`.
 
-Currently, the output has the form:
+Currently, the output CSV has the form:
 ID | Monomer SMILES | Polymer SMILES | E_xtb | E_solv | VIP | VEA | Opitical gap | Osc. strength|Duration|
 -- | -------------- | -------------- | ----- | ------ | --- | --- | ------------ | -------------|--------|
 ⋮|⋮|⋮|⋮|⋮|⋮|⋮|⋮|⋮|⋮
+
+PolyHTS will also write to a SQL database during execution, using `SQLite3`, stored in the `<name>.db` file.
 
 
 In fact, there will be a separate monomer SMILES column for each of the unique monomers used to create each polymer.
@@ -57,5 +59,5 @@ It is known that the conformer search is by far the rate limiting step 😎 of t
 - [ ] Allow user to change number of conformers
 - [ ] Allow user to retrieve selected geometries as XYZ/MOL files (Probably a good idea to align and minimise RMS!)
 - [ ] ~~PostreSQL Integration! CSVs are testing my patience, and pandas is only so good...~~
-- [ ] SQLite Integration!
+- [x] SQLite Integration!
 - [ ] Provide bencmarks regarding polymer lengths and core counts etc.
