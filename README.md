@@ -61,3 +61,4 @@ It is known that the conformer search is by far the rate limiting step 😎 of t
 - [ ] ~~PostreSQL Integration! CSVs are testing my patience, and pandas is only so good...~~
 - [x] SQLite Integration!
 - [ ] Provide bencmarks regarding polymer lengths and core counts etc.
+- [ ] Add conversion/scaling for SE <-> DFT comparisons
