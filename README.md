@@ -49,7 +49,7 @@ PolyHTS will also write to a SQL database during execution, using `SQLite3`, sto
 
 In fact, there will be a separate monomer SMILES column for each of the unique monomers used to create each polymer.
 
-It is known that the conformer search is by far the rate limiting step 😎 of the process, sometimes taking several hours for generation of 500 conformers of an AB copolymer with length 8 on 8 threads. However, this appears to be limited to repeat units with linkages that are no 180° to eachother, which is to be somewhat expected.
+It is known that the conformer search is by far the rate limiting step 😎 of the process, sometimes taking several hours for generation of 500 conformers of an AB copolymer with length 8 on 8 threads. This issue is especially prevelant for larger monomers, and apperas to be driven by RDKit struggling to embed the monomers properly from SMILES. I shall look in to why, and if there is a workaround.
 
 ## To-do
 - [x] Upload to GitHub
@@ -62,3 +62,4 @@ It is known that the conformer search is by far the rate limiting step 😎 of t
 - [x] SQLite Integration!
 - [ ] Provide bencmarks regarding polymer lengths and core counts etc.
 - [x] Add conversion/scaling for SE <-> DFT comparisons
+- [ ] Look into why some combinations lead to slow conformer searching.
