@@ -44,3 +44,8 @@ def flatten_list(nd_list):
         else:
             flat_list.append(i)
     return flat_list
+
+def convert(x, ab):
+    a = ab[0]
+    b = ab[1]
+    return (float(x)*a)+b

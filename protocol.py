@@ -11,6 +11,7 @@ from time import sleep, time
 from utils import *
 import sqlite3
 import sql
+import constants
 
 class polyscreen:
     def __init__(self, Id, monomers, style, length, solvent_params, threads):
@@ -113,14 +114,14 @@ class polyscreen:
         output = run(command)
         with open("vip.out", "x+") as f:
             f.write(output)
-        vip = output[output.find("delta SCC IP") :].split()[4]
+        vip = float(output[output.find("delta SCC IP") :].split()[4])+constants.ELECTRODE
 
         # xTB VEA CALCULATION
         command = spawn_xtb + [xyzfile, "-vea", self.solvent_params]
         output = run(command)
         with open("vea.out", "x+") as f:
             f.write(output)
-        vea = output[output.find("delta SCC EA") :].split()[4]
+        vea = float(output[output.find("delta SCC EA") :].split()[4])+constants.ELECTRODE
 
         # xTB WAVEFUNCTION CALCULATION (xtb4stda)
         command = ["xtb4stda", xyzfile, self.solvent_params]
@@ -134,12 +135,18 @@ class polyscreen:
         lines = output.splitlines()
         for idx, line in enumerate(lines):
             if "excitation energies, transition moments" in line:
-                gap = lines[idx + 2].split()[1]
+                gap = float(lines[idx + 2].split()[1])
                 fL = lines[idx + 2].split()[3]
 
         # Processing results
-        results = [self.Id, self.smiles, self.length, E_xtb, E_solv, vip, vea, gap, fL]
-        cols = ['Id', 'smi', 'length', 'E_xtb', 'E_solv', 'vip', 'vea', 'gap', 'fL']
+        vip_dft = convert(vip, constants.DFT_FACTOR["IP"]["High_epsilon"])
+        vea_dft = convert(vea, constants.DFT_FACTOR["EA"]["High_epsilon"])
+        gap_dft = convert(gap, constants.DFT_FACTOR["Gap"]["High_epsilon"])
+
+        results = [self.Id, self.smiles, self.length, E_xtb, E_solv, vip, vea, vip_dft, vea_dft, gap, gap_dft, fL]
+
+        cols = ['Id', 'smi', 'length'] + constants.DATACOLS
+        del cols[-1]
         removeJunk()
 
         # Adding A/B/C etc titles to columns so we can have monomer smiles in an individual column
@@ -163,7 +170,6 @@ def getProps(Id, monomers, style, length, solvent_params, threads, name):
     ETKDG and xTB geometries are saved, as well as the logs of the xTB calculations.
     """
     start = int(time.time())
-    pwd = os.getcwd()
     log(f"Starting polymer {str(Id)}")
     os.mkdir(str(Id))
     os.chdir(str(Id))
@@ -171,13 +177,13 @@ def getProps(Id, monomers, style, length, solvent_params, threads, name):
     ps = polyscreen(Id, monomers, style, length, solvent_params, threads)
     ps.getPolymerWithConformer()
     results, cols = ps.runCalculations()
-    os.chdir(pwd)
+    os.chdir('..')
     end = int(time.time())
     duration = (end-start)/60
 
     cols.append('Dur')
     results.append(duration)
-    sql_results = results[-7:]
+    sql_results = results[-10:]
 
     connection = sql.newConnection(f'../{name}.db')
     sql.updateData(connection, sql_results, Id)
@@ -222,7 +228,7 @@ def runScreen(name, monomer_list, style, length, solvent, parallel):
     n = len(set([char for char in style]))
     combinations = getCombinations(monomer_list, n, False)
     threads = int(os.environ['OMP_NUM_THREADS'])
-    chunksize = int(math.ceil(len(combinations) / (2*parallel)))
+    chunksize = int(math.ceil(len(combinations) / (parallel)))
     # Combining the arguments for getProps into iterables to be cycled with concurrent.futures.
     args = []
     for idx, combination in enumerate(combinations):
@@ -231,10 +237,9 @@ def runScreen(name, monomer_list, style, length, solvent, parallel):
         for c in combination:
             empty_data.append(quotes(c))
         empty_data.insert(0, idx)
-        empty_data.append([length, 0, 0, 0, 0, 0, 0, 0])
+        empty_data.append([length, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         sql.insertData(connection, flatten_list(empty_data), style)
         args.append(l)
-    chunksize = 20
     print(args)
     pwd = os.getcwd()
     os.mkdir(name)
