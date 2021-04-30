@@ -1,4 +1,4 @@
-DATACOLS = ["E_xtb", "E_solv", "VIPvSHE_xtb", "VEAvSHE_xtb", "VIPvSHE_aDFT", "VEAvSHE_aDFT", "Gap_xtb", "Gap_aDFT", "fL", "DurationMins"]
+DATACOLS = ["smiles", "E_xtb", "E_solv", "VIPvSHE_xtb", "VIPvSHE_aDFT", "VEAvSHE_xtb", "VEAvSHE_aDFT", "Gap_xtb", "Gap_aDFT", "fL", "DurationMins"]
 
 SOLVENTS = ["acetone", "acetonitrile", "benzene", "chcl3", "cs2", "dmso", "ether", "h2o", "methanol", "thf", "toluene"]
 

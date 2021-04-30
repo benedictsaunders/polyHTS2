@@ -42,17 +42,33 @@ class polyscreen:
                 num_repeating_units=self.length,
             ),
         )
+        repeat = stk.ConstructedMolecule(
+            topology_graph=stk.polymer.Linear(
+                building_blocks=bbs,
+                repeating_unit=self.style,
+                num_repeating_units=1,
+            ),
+        )
 
         # Replacing the unused terminal bromines with H
         H = Chem.MolFromSmarts("[H]")
         Br = Chem.MolFromSmarts("[Br]")
+
+        repeat = repeat.with_canonical_atom_ordering().to_rdkit_mol()
         molObj = polymer.with_canonical_atom_ordering().to_rdkit_mol()
+
         molObj = Chem.rdmolops.ReplaceSubstructs(molObj, Br, H, replaceAll = True)[0]
-        molObj = Chem.rdmolops.ReplaceSubstructs(molObj, Br, H)[0]
+        repeat = Chem.rdmolops.ReplaceSubstructs(repeat, Br, H, replaceAll = True)[0]
+
         molObj = rdmolops.RemoveHs(molObj)
+        repeat = rdmolops.RemoveHs(repeat)
 
         rdmolops.SanitizeMol(molObj)
+        rdmolops.SanitizeMol(repeat)
+
         self.smiles = Chem.MolToSmiles(molObj)
+        self.repeat_smiles = Chem.MolToSmiles(repeat)
+
         molObj = Chem.AddHs(molObj)
 
         # Setting parameters for ETKDG for the conformer search.
@@ -143,7 +159,7 @@ class polyscreen:
         vea_dft = convert(vea, constants.DFT_FACTOR["EA"]["High_epsilon"])
         gap_dft = convert(gap, constants.DFT_FACTOR["Gap"]["High_epsilon"])
 
-        results = [self.Id, self.smiles, self.length, E_xtb, E_solv, vip, vea, vip_dft, vea_dft, gap, gap_dft, fL]
+        results = [self.Id, self.smiles, self.length, quotes(self.repeat_smiles), E_xtb, E_solv, vip, vip_dft, vea, vea_dft, gap, gap_dft, fL]
 
         cols = ['Id', 'smi', 'length'] + constants.DATACOLS
         del cols[-1]
@@ -163,7 +179,7 @@ class polyscreen:
 
         return results, cols
 
-def getProps(Id, monomers, style, length, solvent_params, threads, name):
+def getProps(Id, monomers, style, length, solvent_params, threads, name, database, tableName):
     """
     This function allows for the parallelisation of the screening protocol using the
     screening class, defined above. Each polymer is given its own directory wherein the
@@ -183,10 +199,10 @@ def getProps(Id, monomers, style, length, solvent_params, threads, name):
 
     cols.append('Dur')
     results.append(duration)
-    sql_results = results[-10:]
+    sql_results = results[-11:]
 
-    connection = sql.newConnection(f'../{name}.db')
-    sql.updateData(connection, sql_results, Id)
+    connection = sql.newConnection(database)
+    sql.updateData(connection, tableName, sql_results, Id)
     del connection
 
     log(f"Done polymer {str(Id)}")
@@ -201,7 +217,7 @@ def getCombinations(monomers, n, toFile):
             return
     return combinations
 
-def runScreen(name, monomer_list, style, length, solvent, parallel):
+def runScreen(name, monomer_list, style, length, solvent, parallel, database):
     """
     The screening is initialised, using concurrent.futures from within this function. Presently,
     the number of concurrent jobs can be changed with 'in_parallel', but the total cores and
@@ -221,8 +237,12 @@ def runScreen(name, monomer_list, style, length, solvent, parallel):
         solvent_params = ""
 
     # Database shenanigans
-    connection = sql.newConnection(f'{name}.db')
-    sql.newTable(connection, style)
+    tableName = name
+    log(f'Writing to {database}')
+    log(f'Table name: {tableName}')
+
+    connection = sql.newConnection(database)
+    sql.newTable(connection, tableName, style)
 
     # Generate all possible combinations of monomers from the provided list.
     n = len(set([char for char in style]))
@@ -232,21 +252,20 @@ def runScreen(name, monomer_list, style, length, solvent, parallel):
     # Combining the arguments for getProps into iterables to be cycled with concurrent.futures.
     args = []
     for idx, combination in enumerate(combinations):
-        l = [idx, combination, style, length, solvent_params, threads, name]
+        l = [idx, combination, style, length, solvent_params, threads, name, database, tableName]
         empty_data = []
         for c in combination:
             empty_data.append(quotes(c))
         empty_data.insert(0, idx)
-        empty_data.append([length, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-        sql.insertData(connection, flatten_list(empty_data), style)
+        empty_data.append([length, "''", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        sql.insertData(connection, flatten_list(empty_data), tableName, style)
         args.append(l)
-    print(args)
     pwd = os.getcwd()
     os.mkdir(name)
     os.chdir(name)
 
     # Launching the parallelised screening protocol
-    print("Beginning parallelisation")
+    log("Beginning parallelisation")
     with concurrent.futures.ProcessPoolExecutor(max_workers=parallel) as executor:
         x = executor.map(getProps, *zip(*args), chunksize=chunksize)
     lst = list(x)

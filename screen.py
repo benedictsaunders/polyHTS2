@@ -9,6 +9,7 @@ parser.add_argument('-l', dest='length', default=4)
 parser.add_argument('-r', dest='style', default='AB')
 parser.add_argument('-p', dest='parallel', default=4)
 parser.add_argument('-n', dest='name', default='screen')
+parser.add_argument('-d', dest='database', default='database.db')
 targs = parser.parse_args()
 
 if (os.path.isfile(targs.filename)):
@@ -18,4 +19,4 @@ if (os.path.isfile(targs.filename)):
 else:
     monomers = ms
 
-data, cols = runScreen(targs.name, monomers, targs.style, targs.length, 'h2o', targs.parallel)
+data, cols = runScreen(targs.name, monomers, targs.style, targs.length, 'h2o', targs.parallel, targs.database)
