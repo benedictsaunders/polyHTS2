@@ -60,7 +60,7 @@ It is known that the conformer search is by far the rate limiting step 😎 of t
 - [ ] Allow user to retrieve selected geometries as XYZ/MOL files (Probably a good idea to align and minimise RMS!)
 - [ ] ~~PostreSQL Integration! CSVs are testing my patience, and pandas is only so good...~~
 - [x] SQLite Integration!
-- [ ] Provide bencmarks regarding polymer lengths and core counts etc.
+- [ ] Provide benchmarks regarding polymer lengths and core counts etc.
 - [x] Add conversion/scaling for SE <-> DFT comparisons
 - [ ] Look into why some combinations lead to slow conformer searching.
 - [ ] Add xTB and aDFT bandgap columns, rename Gap to OpticalGap
