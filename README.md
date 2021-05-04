@@ -51,8 +51,6 @@ The output SQLite database table has the following fields (columns):
 * sTDA oscialltor strength
 * Duration of each polymer calculation
 
-The database is stored locally in the `<name>.db` file.
-
 It is known that the conformer search is by far the rate limiting step 😎 of the process, sometimes taking several hours for generation of 500 conformers of an AB copolymer with length 8 on 8 threads. This issue is especially prevelant for larger monomers, and apperas to be driven by RDKit struggling to embed the monomers properly from SMILES. I shall look in to why, and if there is a workaround.
 
 ## To-do
