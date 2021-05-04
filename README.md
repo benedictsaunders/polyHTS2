@@ -63,3 +63,4 @@ It is known that the conformer search is by far the rate limiting step 😎 of t
 - [ ] Provide bencmarks regarding polymer lengths and core counts etc.
 - [x] Add conversion/scaling for SE <-> DFT comparisons
 - [ ] Look into why some combinations lead to slow conformer searching.
+- [ ] Add xTB and aDFT bandgap columns, rename Gap to OpticalGap
