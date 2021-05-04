@@ -7,7 +7,6 @@ PolyHTS2 has the following prerequisites:
 * xTB 5.6.4SE
 * xTB4sTDA
 * sTDA
-* pandas
 * sqlite3
 
 ## What does it do?
@@ -22,8 +21,9 @@ python screen.py -f <monomers_list>     # List of SMILES strings, default is mon
                  -l <polymer length>    # Number of repeat units, not separate monomers, default 4
                  -r <repeat_style>      # E.g. A for a homopolymer, AB for a binary copolymer, default AB
                  -p <parallel_workers>  # Should be $NSLOTS/OMP_NUM_THREADS
-                 -n <environment_name>  # A new directory where everything is written and saved, default 'screen'
-                 -s <solvent>           # Deafult 'h2o'
+                 -n <environment_name>  # A new directory where the calculation subdirectories are created, default 'screen'
+                 -s <solvent>           # Default 'h2o'
+                 -d <database_path>     # If a database does not exist, one will be created here, default 'database.db'
 ```
 
 Or, in your own python script, running a screen is done simply with
@@ -39,15 +39,19 @@ You must set `OMP_NUM_THREADS` otherwise polyHTS will use as many cores as are a
 
 The default values are set by `argparse` when handing command line arguments, and not when executing `runScreen`.
 
-Currently, the output CSV has the form:
-ID | Monomer SMILES | Polymer SMILES | E_xtb | E_solv | VIP | VEA | Opitical gap | Osc. strength|Duration|
--- | -------------- | -------------- | ----- | ------ | --- | --- | ------------ | -------------|--------|
-⋮|⋮|⋮|⋮|⋮|⋮|⋮|⋮|⋮|⋮
+## Output
 
-PolyHTS will also write to a SQL database during execution, using `SQLite3`, stored in the `<name>.db` file.
+The output SQLite database table has the following fields (columns):
+* ID
+* Monomer smiles (each having a separate column for the combination chosen, e.g. for an ABCB copolymer, there will be three columns, labelled A, B and C)
+* xTB single point energy of optimised geometry
+* xTB SCC energy, inclusive of solvation
+* xTB VIP, VEA,  energy gap and sTDA optical gap
+* Approximated DFT VIP, VEA, energy gap and optical gap
+* sTDA oscialltor strength
+* Duration of each polymer calculation
 
-
-In fact, there will be a separate monomer SMILES column for each of the unique monomers used to create each polymer.
+The database is stored locally in the `<name>.db` file.
 
 It is known that the conformer search is by far the rate limiting step 😎 of the process, sometimes taking several hours for generation of 500 conformers of an AB copolymer with length 8 on 8 threads. This issue is especially prevelant for larger monomers, and apperas to be driven by RDKit struggling to embed the monomers properly from SMILES. I shall look in to why, and if there is a workaround.
 
