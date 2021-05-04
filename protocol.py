@@ -151,33 +151,21 @@ class polyscreen:
         lines = output.splitlines()
         for idx, line in enumerate(lines):
             if "excitation energies, transition moments" in line:
-                gap = float(lines[idx + 2].split()[1])
+                ogap = float(lines[idx + 2].split()[1])
                 fL = lines[idx + 2].split()[3]
 
         # Processing results
         vip_dft = convert(vip, constants.DFT_FACTOR["IP"]["High_epsilon"])
         vea_dft = convert(vea, constants.DFT_FACTOR["EA"]["High_epsilon"])
-        gap_dft = convert(gap, constants.DFT_FACTOR["Gap"]["High_epsilon"])
+        ogap_dft = convert(ogap, constants.DFT_FACTOR["Gap"]["High_epsilon"])
 
-        results = [self.Id, self.smiles, self.length, quotes(self.repeat_smiles), E_xtb, E_solv, vip, vip_dft, vea, vea_dft, gap, gap_dft, fL]
+        egap = vip - vea
+        egap_dft = vip_dft - vea_dft
 
-        cols = ['Id', 'smi', 'length'] + constants.DATACOLS
-        del cols[-1]
+        results = [quotes(self.repeat_smiles), E_xtb, E_solv, vip, vea, egap, ogap, vip_dft, vea_dft, egap_dft, ogap_dft, fL]
         removeJunk()
 
-        # Adding A/B/C etc titles to columns so we can have monomer smiles in an individual column
-
-        for idx, monomer in enumerate(self.monomers):
-            name = list(string.ascii_uppercase)[idx]
-            results.insert(idx+1, monomer)
-            cols.insert(idx+1, name)
-
-        df = pd.DataFrame(results)
-        df = df.T
-        df.columns = cols
-        df.to_csv("output.csv", index=False)
-
-        return results, cols
+        return results
 
 def getProps(Id, monomers, style, length, solvent_params, threads, name, database, tableName):
     """
@@ -192,22 +180,18 @@ def getProps(Id, monomers, style, length, solvent_params, threads, name, databas
 
     ps = polyscreen(Id, monomers, style, length, solvent_params, threads)
     ps.getPolymerWithConformer()
-    results, cols = ps.runCalculations()
+    results = ps.runCalculations()
     os.chdir('..')
     end = int(time.time())
     duration = (end-start)/60
 
-    cols.append('Dur')
     results.append(duration)
-    sql_results = results[-11:]
-
     connection = sql.newConnection(database)
-    sql.updateData(connection, tableName, sql_results, Id)
+    sql.updateData(connection, tableName, results, Id)
     del connection
 
     log(f"Done polymer {str(Id)}")
-
-    return [results, cols]
+    return results
 
 def getCombinations(monomers, n, toFile):
     combinations = list(itertools.combinations_with_replacement(monomers, n))
@@ -257,7 +241,7 @@ def runScreen(name, monomer_list, style, length, solvent, parallel, database):
         for c in combination:
             empty_data.append(quotes(c))
         empty_data.insert(0, idx)
-        empty_data.append([length, "''", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+        empty_data.append([length, "''", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         sql.insertData(connection, flatten_list(empty_data), tableName, style)
         args.append(l)
     pwd = os.getcwd()
@@ -270,12 +254,5 @@ def runScreen(name, monomer_list, style, length, solvent, parallel, database):
         x = executor.map(getProps, *zip(*args), chunksize=chunksize)
     lst = list(x)
     transpose = list(map(list, zip(*lst)))
-    data = transpose[0]
-    cols = transpose[1][0]
-
-    props_df = pd.DataFrame(data)
-    print(props_df)
-    props_df.columns = cols
-    props_df.to_csv("output.csv", index=False)
     os.chdir(pwd)
-    return data, cols
+    log('Done.')

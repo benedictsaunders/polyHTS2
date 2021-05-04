@@ -6,7 +6,7 @@ from utils import *
 import constants
 
 def sanitizeSQL(s):
-    return re.sub(r'[^A-Za-z0-9_]', '', s)
+    return re.sub(r'[^A-Za-z0-9_.]', '', s)
 
 def split(s):
     return [x for x in s]
@@ -56,6 +56,8 @@ def insertData(connection, data, tableName, repeat_style):
     connection.commit()
 
 def updateData(connection, tableName, data, id):
+    print(constants.DATACOLS)
+    print(data)
     setter = []
     for idx, col in enumerate(constants.DATACOLS):
         setter.append(f"{col} = {str(data[idx])}")
