@@ -73,7 +73,9 @@ class polyscreen:
 
         # Setting parameters for ETKDG for the conformer search.
         params = AllChem.ETKDGv3()
-        params.useSmallRingTorsions = True
+
+        params.useSmallRingTorsions = False
+        params.ignoreSmoothingFailures = True
         params.randomSeed = -1
         params.numThreads = self.threads
         params.useRandomCoords = True
