@@ -16,7 +16,7 @@ Given a list of monomers in the form of SMILES strings, polyHTS2 finds all the p
 ## Usage
 
 The screen can be started from the command line/terminal with the following arguments:
-```
+```bash
 python screen.py -f <monomers_list>     # List of SMILES strings, default is monomers.txt
                  -l <polymer length>    # Number of repeat units, not separate monomers, default 4
                  -r <repeat_style>      # E.g. A for a homopolymer, AB for a binary copolymer, default AB
