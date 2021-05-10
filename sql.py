@@ -65,3 +65,13 @@ def updateData(connection, tableName, data, id):
     cur = connection.cursor()
     cur.execute(sql)
     connection.commit()
+
+def SQLExistenceCheck(connection, table):
+    cur = connection.cursor()
+    sql = f"SELECT count(name) FROM sqlite_master WHERE type='table' AND name='{table}'"
+    cur.execute(sql)
+    if cur.fetchone()[0]==1:
+        x = True
+    else:
+       x = False
+    return x

@@ -176,9 +176,12 @@ def getProps(Id, monomers, style, length, solvent_params, threads, name, databas
     ETKDG and xTB geometries are saved, as well as the logs of the xTB calculations.
     """
     start = int(time.time())
-    log(f"Starting polymer {str(Id)}")
-    os.mkdir(str(Id))
-    os.chdir(str(Id))
+    sid = str(Id)
+    log(f"Starting polymer {sid}")
+
+    if not os.path.exists(sid):
+        os.mkdir(sid)
+    os.chdir(sid)
 
     ps = polyscreen(Id, monomers, style, length, solvent_params, threads)
     ps.getPolymerWithConformer()
@@ -192,7 +195,7 @@ def getProps(Id, monomers, style, length, solvent_params, threads, name, databas
     sql.updateData(connection, tableName, results, Id)
     del connection
 
-    log(f"Done polymer {str(Id)}")
+    log(f"Done polymer {sid}")
     return results
 
 def getCombinations(monomers, n, toFile):
@@ -222,32 +225,51 @@ def runScreen(name, monomer_list, style, length, solvent, parallel, database):
     else:
         solvent_params = ""
 
-    # Database shenanigans
+    # Calculation and database setup/re-setup
+
     tableName = name
     log(f'Writing to {database}')
     log(f'Table name: {tableName}')
+    n = len(set([char for char in style]))
+    threads = int(os.environ['OMP_NUM_THREADS'])
+    args = []
 
     connection = sql.newConnection(database)
-    sql.newTable(connection, tableName, style)
+    tableExists = sql.SQLExistenceCheck(connection, tableName)
+    if (tableExists == False):
+        sql.newTable(connection, tableName, style)
 
-    # Generate all possible combinations of monomers from the provided list.
-    n = len(set([char for char in style]))
-    combinations = getCombinations(monomer_list, n, False)
-    threads = int(os.environ['OMP_NUM_THREADS'])
-    chunksize = int(math.ceil(len(combinations) / (parallel)))
+        # Generate all possible combinations of monomers from the provided list.
+        combinations = getCombinations(monomer_list, n, False)
+        ids = np.arange(0, len(combinations), 1)
+
+        # If partially populated table already exists, find empty records, read combinations and get IDs
+    else:
+        df = pd.read_sql_query(f"select * from {tableName} where smiles = ''", connection)
+        columns = list(df.columns)
+        monomercols = [x for x in columns if x in list(string.ascii_uppercase)]
+        monomers = []
+        for col in monomercols:
+            monomers.append(df[col].tolist())
+        combinations = np.array(monomers).T.tolist()
+        ids = df["id"].to_list()
+
     # Combining the arguments for getProps into iterables to be cycled with concurrent.futures.
-    args = []
-    for idx, combination in enumerate(combinations):
+    chunksize = int(math.ceil(len(combinations) / (parallel)))
+    for idx, combination in zip(ids, combinations):
         l = [idx, combination, style, length, solvent_params, threads, name, database, tableName]
-        empty_data = []
-        for c in combination:
-            empty_data.append(quotes(c))
-        empty_data.insert(0, idx)
-        empty_data.append([length, "''", 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-        sql.insertData(connection, flatten_list(empty_data), tableName, style)
+        if (tableExists == False):
+            empty_data = []
+            for c in combination:
+                empty_data.append(quotes(c  ))
+            empty_data.insert(0, idx)
+            empty_data.append([length, "''"] + list(np.zeros(len(constants.DATACOLS)-1)))
+            sql.insertData(connection, flatten_list(empty_data), tableName, style)
         args.append(l)
+
     pwd = os.getcwd()
-    os.mkdir(name)
+    if not os.path.exists(name):
+        os.mkdir(name)
     os.chdir(name)
 
     # Launching the parallelised screening protocol
