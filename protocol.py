@@ -198,15 +198,12 @@ def getProps(Id, monomers, style, length, solvent_params, threads, name, databas
     log(f"Done polymer {sid}")
     return results
 
-def getCombinations(monomers, n, toFile):
+def getCombinations(monomers, n):
     combinations = list(itertools.combinations_with_replacement(monomers, n))
     enumerated_combinations = enumerate(combinations)
-    if toFile:
-        with open('combinations.txt', 'w+') as f:
-            return
     return combinations
 
-def runScreen(name, monomer_list, style, length, solvent, parallel, database):
+def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database):
     """
     The screening is initialised, using concurrent.futures from within this function. Presently,
     the number of concurrent jobs can be changed with 'in_parallel', but the total cores and
@@ -225,6 +222,13 @@ def runScreen(name, monomer_list, style, length, solvent, parallel, database):
     else:
         solvent_params = ""
 
+    # Conversion of monomers to canonical smiles
+    canonical = []
+    for m in monomer_list_raw:
+        molObj = Chem.MolFromSmiles(m)
+        canonical.append(Chem.MolToSmiles(molObj, canonical = True))
+    monomer_list = canonical
+
     # Calculation and database setup/re-setup
 
     tableName = name
@@ -240,7 +244,7 @@ def runScreen(name, monomer_list, style, length, solvent, parallel, database):
         sql.newTable(connection, tableName, style)
 
         # Generate all possible combinations of monomers from the provided list.
-        combinations = getCombinations(monomer_list, n, False)
+        combinations = getCombinations(monomer_list, n)
         ids = np.arange(0, len(combinations), 1)
 
         # If partially populated table already exists, find empty records, read combinations and get IDs
