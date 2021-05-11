@@ -41,6 +41,10 @@ You must set `OMP_NUM_THREADS` otherwise polyHTS will use as many cores as are a
 
 So that previous screens' tables can be compared properly, one can use the `canonical_conversion.py` script. It for every column headered with A, B, C etc, is converted to canonical SMILES, which is added as another column `Canonical_[...]`
 
+```bash
+$ python canonical_conversion.py -d <database, default data.db> -t <table>
+```
+
 ## Output
 
 The output SQLite database table has the following fields (columns):
