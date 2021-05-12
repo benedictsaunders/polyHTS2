@@ -2,6 +2,7 @@ import sqlite3, string, argparse
 import numpy as np
 import pandas as pd
 from rdkit import Chem
+
 def toCanonical(s):
     molObj = Chem.MolFromSmiles(s)
     Chem.SanitizeMol(molObj)
@@ -18,8 +19,10 @@ table = targs.table
 df = pd.read_sql_query(f"select * from {table}", connection)
 cols = list(df.columns)
 print(cols)
+
 cancols = []
 mons = []
+
 for col in cols:
     if col in string.ascii_uppercase:
         mons.append(col)
@@ -28,6 +31,9 @@ for col in cols:
         for s in smiles:
             canonical.append(toCanonical(s))
         cancols.append(canonical)
-for idx, c in enumerate(cancols, 2):
-    df2 = df.insert(idx, f"Canonical_{mons[idx-2]}", c)
+
+loc = 2
+for idx, c in enumerate(cancols, loc):
+    df.insert(idx, f"Canonical_{mons[idx-loc]}", c)
 df.to_sql(f"{targs.table}_canonical", con=connection, index=False)
+print('Done.')
