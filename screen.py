@@ -20,4 +20,4 @@ if (os.path.isfile(targs.filename)):
 else:
     monomers = ms
 
-data, cols = runScreen(targs.name, monomers, targs.style, targs.length, 'h2o', targs.parallel, targs.database)
+data, cols = runScreen(targs.name, monomers, targs.style, targs.length, 'h2o', targs.parallel, targs.database, targs.ForceNew)
