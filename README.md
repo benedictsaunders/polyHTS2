@@ -11,31 +11,33 @@ PolyHTS2 has the following prerequisites:
 
 ## What does it do?
 
-Given a list of monomers in the form of SMILES strings, polyHTS2 finds all the possible combinations of these monomers, which are then used to define a polymer. Each polymer undergoes a conformer search; every conformer is relaxed with MMFF94. The lowest energy conformer is then treated with xTB (SE geometry optimisation, VIP, VEA) and also sTDA (optical gap, oscillator strength).
+PolyHTS2 builds a series of polymers for computatiol screening. Polymers can be created exhaustively (all possbile combinations of the monomers inputted), or have a set pattern, e.g. give one list for monomer A and another for monomer B. Each polymer undergoes a conformer search; every conformer is relaxed with MMFF94. The lowest energy conformer is then treated with xTB (SE geometry optimisation, VIP, VEA) and also sTDA (optical gap, oscillator strength).
 
 ## Usage
 
 The screen can be started from the command line/terminal with the following arguments:
 ```bash
-$ python screen.py -f <monomers_list>     # List of SMILES strings, default is monomers.txt
-                 -l <polymer length>    # Number of repeat units, not separate monomers, default 4
-                 -r <repeat_style>      # E.g. A for a homopolymer, AB for a binary copolymer, default AB
-                 -p <parallel_workers>  # Should be $NSLOTS/OMP_NUM_THREADS
-                 -n <environment_name>  # A new directory where the calculation subdirectories are created, default 'screen'
-                 -s <solvent>           # Default 'h2o'
-                 -d <database_path>     # If a database does not exist, one will be created here, default 'database.db'
-                 --ForceNew             # Deletes any exisitng directory and table with the same environment name, if they exist
+$ python screen.py -f <list_1.txt> <list_2.txt> # Lists of SMILES strings, default is monomers.txt
+                 -l <polymer length>            # Number of repeat units, not separate monomers, default 4
+                 -r <repeat_style>              # E.g. A for a homopolymer, AB for a binary copolymer, default AB
+                 -p <parallel_workers>          # Should be $NSLOTS/OMP_NUM_THREADS
+                 -n <environment_name>          # A new directory where the calculation subdirectories are created, default 'screen'
+                 -s <solvent>                   # Default 'h2o'
+                 -d <database_path>             # If a database does not exist, one will be created here, default 'database.db'
+                 --exhaustive                   # If not set, more than one input file is required.
+                 --ForceNew                     # Deletes any exisitng directory and table with the same environment name, if they exist
 ```
 
 Or, in your own python script, running a screen is done simply with
 ```python
   runScreen(
-    <monomer_list>, 
+    <monomer_lists>, 
     <repeat_unit_style>,
     <number_of_repeat_units>,
     <solvent>,                # as defined in the xtb documentation, and near the top of constants.py
     <parallel_workers>,
     <database_path>,
+    <exhaustive>,             # Bool
     <forceNew>                # Bool
     )
 ```
@@ -48,7 +50,7 @@ So that previous screens' tables can be compared properly, one can use the `cano
 ```bash
 $ python canonical_conversion.py -d <database, default data.db> -t <table>
 ```
-
+Species undergoing screening will automatically have their SMILES converted.
 ## Output
 
 The output SQLite database table has the following fields (columns):
@@ -75,6 +77,7 @@ It is known that the conformer search is by far the rate limiting step 😎 of t
 - [x] Add conversion/scaling for SE <-> DFT comparisons
 - [x] Look into why some combinations lead to slow conformer searching.
 - [x] Add xTB and aDFT bandgap columns, rename Gap to OpticalGap
+- [x] One-to-many combinations
 
 ### Reason for longer conformer searches
 Running ETKDG with experiemental torsion angles enabled significanly slowed the screenin; an 8 x fluorene polymer on 8 cores took over 2000 minutes!
