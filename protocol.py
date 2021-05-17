@@ -199,12 +199,17 @@ def getProps(Id, monomers, style, length, solvent_params, threads, name, databas
     log(f"Done polymer {sid}")
     return results
 
-def getCombinations(monomers, n):
-    combinations = list(itertools.combinations_with_replacement(monomers, n))
-    enumerated_combinations = enumerate(combinations)
+def getCombinations(monomers, n, exhaustive):
+    if exhaustive:
+        flat_monomers = [i for lst in monomers for i in lst]
+        combinations = list(itertools.combinations_with_replacement(flat_monomers, n))
+    else:
+        combinations = list(itertools.product(*monomers))
+    log(str(np.array(combinations)))
+    print(str(np.array(combinations)))
     return combinations
 
-def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database, forceNew = False):
+def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database, exhaustive = False, forceNew = False):
     """
     The screening is initialised, using concurrent.futures from within this function. Presently,
     the number of concurrent jobs can be changed with 'in_parallel', but the total cores and
@@ -224,12 +229,14 @@ def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database
         solvent_params = ""
 
     # Conversion of monomers to canonical smiles
-    canonical = []
-    for m in monomer_list_raw:
-        molObj = Chem.MolFromSmiles(m)
-        canonical.append(Chem.MolToSmiles(molObj, canonical = True))
-    monomer_list = canonical
-
+    converted = []
+    for mlist in monomer_list_raw:
+        canonical = []
+        for m in mlist:
+            molObj = Chem.MolFromSmiles(m)
+            canonical.append(Chem.MolToSmiles(molObj, canonical = True))
+        converted.append(canonical)
+    monomer_list = converted
 
     # Calculation and database setup/re-setup
     tableName = name
@@ -238,21 +245,20 @@ def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database
 
     if (forceNew and tableExists):
         log(f'forceNew set to True, deleting previous table {tableName} and previous screening directory.')
-        sql.dropTable(connectcion, tableName)
+        sql.dropTable(connection, tableName)
         os.rmdir(name)
-        
+
     log(f'Writing to {database}')
     log(f'Table name: {tableName}')
     n = len(set([char for char in style]))
     threads = int(os.environ['OMP_NUM_THREADS'])
     args = []
 
-
-    if (tableExists == False):
+    if tableExists == False:
         sql.newTable(connection, tableName, style)
 
         # Generate all possible combinations of monomers from the provided list.
-        combinations = getCombinations(monomer_list, n)
+        combinations = getCombinations(monomer_list, n, exhaustive)
         ids = np.arange(0, len(combinations), 1)
 
         # If partially populated table already exists, find empty records, read combinations and get IDs
