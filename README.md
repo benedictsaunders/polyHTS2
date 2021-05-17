@@ -36,7 +36,7 @@ Or, in your own python script, running a screen is done simply with
     <solvent>,                # as defined in the xtb documentation, and near the top of constants.py
     <parallel_workers>,
     <database_path>,
-    <forceNew = False>
+    <forceNew>                # Bool
     )
 ```
 You must set `OMP_NUM_THREADS` otherwise polyHTS will use as many cores as are available. This will likely results in massive inefficiencies, particularly if you specify more that one parallel worker.
