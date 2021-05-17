@@ -24,6 +24,7 @@ $ python screen.py -f <monomers_list>     # List of SMILES strings, default is m
                  -n <environment_name>  # A new directory where the calculation subdirectories are created, default 'screen'
                  -s <solvent>           # Default 'h2o'
                  -d <database_path>     # If a database does not exist, one will be created here, default 'database.db'
+                 --ForceNew             # Deletes any exisitng directory and table with the same environment name, if they exist
 ```
 
 Or, in your own python script, running a screen is done simply with
@@ -33,6 +34,9 @@ Or, in your own python script, running a screen is done simply with
     <repeat_unit_style>,
     <number_of_repeat_units>,
     <solvent>,                # as defined in the xtb documentation, and near the top of constants.py
+    <parallel_workers>,
+    <database_path>,
+    <forceNew = False>
     )
 ```
 You must set `OMP_NUM_THREADS` otherwise polyHTS will use as many cores as are available. This will likely results in massive inefficiencies, particularly if you specify more that one parallel worker.
