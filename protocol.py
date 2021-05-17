@@ -98,6 +98,7 @@ class polyscreen:
         search for a specific string in the output stream, and finding the output values relative to
         the lookup string.
         """
+        sid = str(self.Id)
         spawn_xtb = ["faketime", "2018-1-1 00:00:00", "xtb"]
         xyzfile = f"{str(self.Id)}.xyz"
 
@@ -106,7 +107,7 @@ class polyscreen:
         command = spawn_xtb + [xyzfile, "-opt", self.solvent_params]
         output = run(command)
 
-        with open(f"opt.out", "x+") as f:
+        with open(f"opt.out", "w+") as f:
             f.write(output)
 
         lines = output.splitlines()
@@ -130,14 +131,14 @@ class polyscreen:
         # xTB VIP CALCULATION
         command = spawn_xtb + [xyzfile, "-vip", self.solvent_params]
         output = run(command)
-        with open("vip.out", "x+") as f:
+        with open("vip.out", "w+") as f:
             f.write(output)
         vip = float(output[output.find("delta SCC IP") :].split()[4])+constants.ELECTRODE
 
         # xTB VEA CALCULATION
         command = spawn_xtb + [xyzfile, "-vea", self.solvent_params]
         output = run(command)
-        with open("vea.out", "x+") as f:
+        with open("vea.out", "w+") as f:
             f.write(output)
         vea = float(output[output.find("delta SCC EA") :].split()[4])+constants.ELECTRODE
 
@@ -148,7 +149,7 @@ class polyscreen:
         # xTB EXCITATIONS CALCULATIONS
         command = ["stda", "-xtb", "-e", "8"]
         output = run(command)
-        with open("stda-calc.out", "w") as f:
+        with open("stda-calc.out", "w+") as f:
             f.write(output)
         lines = output.splitlines()
         for idx, line in enumerate(lines):
@@ -203,7 +204,7 @@ def getCombinations(monomers, n):
     enumerated_combinations = enumerate(combinations)
     return combinations
 
-def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database):
+def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database, forceNew = False):
     """
     The screening is initialised, using concurrent.futures from within this function. Presently,
     the number of concurrent jobs can be changed with 'in_parallel', but the total cores and
@@ -229,17 +230,24 @@ def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database
         canonical.append(Chem.MolToSmiles(molObj, canonical = True))
     monomer_list = canonical
 
-    # Calculation and database setup/re-setup
 
+    # Calculation and database setup/re-setup
     tableName = name
+    connection = sql.newConnection(database)
+    tableExists = sql.SQLExistenceCheck(connection, tableName)
+
+    if (forceNew and tableExists):
+        log(f'forceNew set to True, deleting previous table {tableName} and previous screening directory.')
+        sql.dropTable(connectcion, tableName)
+        os.rmdir(name)
+        
     log(f'Writing to {database}')
     log(f'Table name: {tableName}')
     n = len(set([char for char in style]))
     threads = int(os.environ['OMP_NUM_THREADS'])
     args = []
 
-    connection = sql.newConnection(database)
-    tableExists = sql.SQLExistenceCheck(connection, tableName)
+
     if (tableExists == False):
         sql.newTable(connection, tableName, style)
 
@@ -249,7 +257,7 @@ def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database
 
         # If partially populated table already exists, find empty records, read combinations and get IDs
     else:
-        df = pd.read_sql_query(f"select * from {tableName} where smiles = ''", connection)
+        df = pd.read_sql_query(f"select * from {tableName} where DurationMins = 0.0", connection)
         columns = list(df.columns)
         monomercols = [x for x in columns if x in list(string.ascii_uppercase)]
         monomers = []
@@ -258,6 +266,9 @@ def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database
         combinations = np.array(monomers).T.tolist()
         ids = df["id"].to_list()
 
+    if len(combinations) == 0:
+        log('Quitting. Nothing to do.')
+        exit()
     # Combining the arguments for getProps into iterables to be cycled with concurrent.futures.
     chunksize = int(math.ceil(len(combinations) / (parallel)))
     for idx, combination in zip(ids, combinations):

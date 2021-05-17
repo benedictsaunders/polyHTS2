@@ -10,6 +10,7 @@ parser.add_argument('-r', dest='style', default='AB')
 parser.add_argument('-p', dest='parallel', default=4)
 parser.add_argument('-n', dest='name', default='screen')
 parser.add_argument('-d', dest='database', default='database.db')
+parser.add_argument('--ForceNew', action="store_true")
 targs = parser.parse_args()
 
 if (os.path.isfile(targs.filename)):

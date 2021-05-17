@@ -41,6 +41,12 @@ def newTable(connection, tableName, repeat_style):
     except Error as e:
         print(e)
 
+def dropTable(connection, table):
+    cur = connection.cursor()
+    sql = f"drop table {table};"
+    cur.execute(sql)
+    connection.commit()
+
 def insertData(connection, data, tableName, repeat_style):
     data = listelementsToString(data)
     rs = list(set(split(repeat_style)))
