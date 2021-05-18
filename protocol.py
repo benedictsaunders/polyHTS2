@@ -234,7 +234,11 @@ def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database
         canonical = []
         for m in mlist:
             molObj = Chem.MolFromSmiles(m)
-            canonical.append(Chem.MolToSmiles(molObj, canonical = True))
+            links = molObj.GetSubstructMatches(Chem.MolFromSmarts('Br'))
+            if len(links) == 2:
+                canonical.append(Chem.MolToSmiles(molObj, canonical = True))
+            else:
+                log('Input should have exactly 2 link identifier groups.')
         converted.append(canonical)
     monomer_list = converted
 
