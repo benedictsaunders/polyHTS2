@@ -1,6 +1,32 @@
-DATACOLS = ["smiles", "E_xtb", "E_solv", "VIPvSHE_xtb" , "VEAvSHE_xtb" , "EnergyGap_xtb", "OpticalGap_xtb", "VIPvSHE_aDFT", "VEAvSHE_aDFT", "EnergyGap_aDFT", "OpticalGap_aDFT", "fL", "DurationMins"]
+DATACOLS = [
+    "smiles",
+    "E_xtb",
+    "E_solv",
+    "VIPvSHE_xtb",
+    "VEAvSHE_xtb",
+    "EnergyGap_xtb",
+    "OpticalGap_xtb",
+    "VIPvSHE_aDFT",
+    "VEAvSHE_aDFT",
+    "EnergyGap_aDFT",
+    "OpticalGap_aDFT",
+    "fL",
+    "DurationMins",
+]
 
-SOLVENTS = ["acetone", "acetonitrile", "benzene", "chcl3", "cs2", "dmso", "ether", "h2o", "methanol", "thf", "toluene"]
+SOLVENTS = [
+    ("acetone", 20.7),
+    ("acetonitrile", 37.5),
+    ("benzene", 2.27),
+    ("chcl3", 4.81),
+    ("cs2", 2.6),
+    ("dmso", 46.68),
+    ("ether", 4.33),
+    ("h2o", 80.1),
+    ("methanol", 32.7),
+    ("thf", 7.58),
+    ("toluene", 2.38),
+]
 
 ELECTRODE = -4.44
 

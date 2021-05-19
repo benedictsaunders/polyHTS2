@@ -157,10 +157,21 @@ class polyscreen:
                 ogap = float(lines[idx + 2].split()[1])
                 fL = lines[idx + 2].split()[3]
 
+        dielectric_threshold = 40.
+
+        solvent = solvent_params.split()[-1]
+        tSolvents = np.array(constants.SOLVENTS).T.tolist()
+        dielectric = tSolvents[1][tSolvents[0].index(solvent)]
+        if dielectric >= dielectric_threshold:
+            DiHiLo = "High_epsilon"
+        else:
+            DiHiLo = "Low_epsilon"
+
         # Processing results
-        vip_dft = convert(vip, constants.DFT_FACTOR["IP"]["High_epsilon"])
-        vea_dft = convert(vea, constants.DFT_FACTOR["EA"]["High_epsilon"])
-        ogap_dft = convert(ogap, constants.DFT_FACTOR["Gap"]["High_epsilon"])
+
+        vip_dft = convert(vip, constants.DFT_FACTOR["IP"][DiHiLo])
+        vea_dft = convert(vea, constants.DFT_FACTOR["EA"][DiHiLo])
+        ogap_dft = convert(ogap, constants.DFT_FACTOR["Gap"][DiHiLo])
 
         egap = vip - vea
         egap_dft = vip_dft - vea_dft
@@ -217,11 +228,12 @@ def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database
     reads how many threads are to be used.
     """
     # Check solvent validity
+    solvents = np.array(constants.SOLVENTS).T.tolist()
     if solvent != None:
-        if solvent not in constants.SOLVENTS:
+        if solvent not in solvents:
             raise Exception(
                 "Invalid solvent choice. Valid solvents:",
-                [i for i in constants.SOLVENTS],
+                [i for i in solvents],
             )
         else:
             solvent_params = f"-gbsa {solvent}"
