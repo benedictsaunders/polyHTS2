@@ -59,7 +59,7 @@ The output SQLite database table has the following fields (columns):
 * xTB single point energy of optimised geometry
 * xTB SCC energy, inclusive of solvation
 * xTB VIP, VEA,  energy gap and sTDA optical gap
-* Approximated DFT VIP, VEA, energy gap and optical gap
+* Approximated DFT VIP, VEA, fundamental gap and optical gap
 * sTDA oscialltor strength
 * Duration of each polymer calculation
 
