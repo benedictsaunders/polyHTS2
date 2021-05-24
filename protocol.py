@@ -173,7 +173,7 @@ class polyscreen:
         dielectric_threshold = 40.0
         solvent = self.solvent_params.split()[-1]
         tSolvents = np.array(constants.SOLVENTS).T.tolist()
-        dielectric = tSolvents[1][tSolvents[0].index(solvent)]
+        dielectric = float(tSolvents[1][tSolvents[0].index(solvent)])
         if dielectric >= dielectric_threshold:
             DiHiLo = "High_epsilon"
         else:
