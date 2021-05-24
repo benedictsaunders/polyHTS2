@@ -13,6 +13,7 @@ import sqlite3
 import sql
 import constants
 
+
 class polyscreen:
     def __init__(self, Id, monomers, style, length, solvent_params, threads):
         self.pwd = os.getcwd()
@@ -34,7 +35,9 @@ class polyscreen:
 
         # Making the building blocks and hence the polymer from the monomer smiles strings.
         for m in self.monomers:
-            bbs.append(stk.BuildingBlock(smiles=m, functional_groups=[stk.BromoFactory()]))
+            bbs.append(
+                stk.BuildingBlock(smiles=m, functional_groups=[stk.BromoFactory()])
+            )
         polymer = stk.ConstructedMolecule(
             topology_graph=stk.polymer.Linear(
                 building_blocks=bbs,
@@ -57,8 +60,8 @@ class polyscreen:
         repeat = repeat.with_canonical_atom_ordering().to_rdkit_mol()
         molObj = polymer.with_canonical_atom_ordering().to_rdkit_mol()
 
-        molObj = Chem.rdmolops.ReplaceSubstructs(molObj, Br, H, replaceAll = True)[0]
-        repeat = Chem.rdmolops.ReplaceSubstructs(repeat, Br, H, replaceAll = True)[0]
+        molObj = Chem.rdmolops.ReplaceSubstructs(molObj, Br, H, replaceAll=True)[0]
+        repeat = Chem.rdmolops.ReplaceSubstructs(repeat, Br, H, replaceAll=True)[0]
 
         molObj = rdmolops.RemoveHs(molObj)
         repeat = rdmolops.RemoveHs(repeat)
@@ -84,12 +87,14 @@ class polyscreen:
         cids = Chem.rdDistGeom.EmbedMultipleConfs(molObj, confNum, params=params)
 
         # Minimizing the conformer set, and hence saving the geometry of the lowest energy conformer
-        res = AllChem.MMFFOptimizeMoleculeConfs(molObj, numThreads = self.threads)
+        res = AllChem.MMFFOptimizeMoleculeConfs(molObj, numThreads=self.threads)
         mmffenergies = []
         for r in res:
             mmffenergies.append(r[1])
         lowest = mmffenergies.index(min(mmffenergies))
-        Chem.rdmolfiles.MolToXYZFile(molObj, "{}.xyz".format(str(self.Id)), confId=cids[lowest])
+        Chem.rdmolfiles.MolToXYZFile(
+            molObj, "{}.xyz".format(str(self.Id)), confId=cids[lowest]
+        )
 
     def runCalculations(self):
         """
@@ -133,14 +138,20 @@ class polyscreen:
         output = run(command)
         with open("vip.out", "w+") as f:
             f.write(output)
-        vip = float(output[output.find("delta SCC IP") :].split()[4])+constants.ELECTRODE
+        vip = (
+            float(output[output.find("delta SCC IP") :].split()[4])
+            + constants.ELECTRODE
+        )
 
         # xTB VEA CALCULATION
         command = spawn_xtb + [xyzfile, "-vea", self.solvent_params]
         output = run(command)
         with open("vea.out", "w+") as f:
             f.write(output)
-        vea = float(output[output.find("delta SCC EA") :].split()[4])+constants.ELECTRODE
+        vea = (
+            float(output[output.find("delta SCC EA") :].split()[4])
+            + constants.ELECTRODE
+        )
 
         # xTB WAVEFUNCTION CALCULATION (xtb4stda)
         command = ["xtb4stda", xyzfile, self.solvent_params]
@@ -157,9 +168,10 @@ class polyscreen:
                 ogap = float(lines[idx + 2].split()[1])
                 fL = lines[idx + 2].split()[3]
 
-        dielectric_threshold = 40.
+        # Determining which model to use for DFT scaling
 
-        solvent = solvent_params.split()[-1]
+        dielectric_threshold = 40.0
+        solvent = self.solvent_params.split()[-1]
         tSolvents = np.array(constants.SOLVENTS).T.tolist()
         dielectric = tSolvents[1][tSolvents[0].index(solvent)]
         if dielectric >= dielectric_threshold:
@@ -167,21 +179,44 @@ class polyscreen:
         else:
             DiHiLo = "Low_epsilon"
 
+        unified = True
+
+        if unified:
+            model = ["IP/EA", "IP/EA"]
+        else:
+            model = ["IP", "EA"]
+
         # Processing results
 
-        vip_dft = convert(vip, constants.DFT_FACTOR["IP"][DiHiLo])
-        vea_dft = convert(vea, constants.DFT_FACTOR["EA"][DiHiLo])
+        vip_dft = convert(vip, constants.DFT_FACTOR[model[0]][DiHiLo])
+        vea_dft = convert(vea, constants.DFT_FACTOR[model[1]][DiHiLo])
         ogap_dft = convert(ogap, constants.DFT_FACTOR["Gap"][DiHiLo])
 
         egap = vip - vea
         egap_dft = vip_dft - vea_dft
 
-        results = [quotes(self.repeat_smiles), E_xtb, E_solv, vip, vea, egap, ogap, vip_dft, vea_dft, egap_dft, ogap_dft, fL]
+        results = [
+            quotes(self.repeat_smiles),
+            E_xtb,
+            E_solv,
+            vip,
+            vea,
+            egap,
+            ogap,
+            vip_dft,
+            vea_dft,
+            egap_dft,
+            ogap_dft,
+            fL,
+        ]
         removeJunk()
 
         return results
 
-def getProps(Id, monomers, style, length, solvent_params, threads, name, database, tableName):
+
+def getProps(
+    Id, monomers, style, length, solvent_params, threads, name, database, tableName
+):
     """
     This function allows for the parallelisation of the screening protocol using the
     screening class, defined above. Each polymer is given its own directory wherein the
@@ -198,9 +233,9 @@ def getProps(Id, monomers, style, length, solvent_params, threads, name, databas
     ps = polyscreen(Id, monomers, style, length, solvent_params, threads)
     ps.getPolymerWithConformer()
     results = ps.runCalculations()
-    os.chdir('..')
+    os.chdir("..")
     end = int(time.time())
-    duration = (end-start)/60
+    duration = (end - start) / 60
 
     results.append(duration)
     connection = sql.newConnection(database)
@@ -209,6 +244,7 @@ def getProps(Id, monomers, style, length, solvent_params, threads, name, databas
 
     log(f"Done polymer {sid}")
     return results
+
 
 def getCombinations(monomers, n, exhaustive):
     if exhaustive:
@@ -220,7 +256,18 @@ def getCombinations(monomers, n, exhaustive):
     print(str(np.array(combinations)))
     return combinations
 
-def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database, exhaustive = False, forceNew = False):
+
+def runScreen(
+    name,
+    monomer_list_raw,
+    style,
+    length,
+    solvent,
+    parallel,
+    database,
+    exhaustive=False,
+    forceNew=False,
+):
     """
     The screening is initialised, using concurrent.futures from within this function. Presently,
     the number of concurrent jobs can be changed with 'in_parallel', but the total cores and
@@ -228,7 +275,7 @@ def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database
     reads how many threads are to be used.
     """
     # Check solvent validity
-    solvents = np.array(constants.SOLVENTS).T.tolist()
+    solvents = np.array(constants.SOLVENTS).T.tolist()[0]
     if solvent != None:
         if solvent not in solvents:
             raise Exception(
@@ -246,11 +293,11 @@ def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database
         canonical = []
         for m in mlist:
             molObj = Chem.MolFromSmiles(m)
-            links = molObj.GetSubstructMatches(Chem.MolFromSmarts('Br'))
+            links = molObj.GetSubstructMatches(Chem.MolFromSmarts("Br"))
             if len(links) == 2:
-                canonical.append(Chem.MolToSmiles(molObj, canonical = True))
+                canonical.append(Chem.MolToSmiles(molObj, canonical=True))
             else:
-                log('Input should have exactly 2 link identifier groups.')
+                log("Input should have exactly 2 link identifier groups.")
         converted.append(canonical)
     monomer_list = converted
 
@@ -259,15 +306,17 @@ def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database
     connection = sql.newConnection(database)
     tableExists = sql.SQLExistenceCheck(connection, tableName)
 
-    if (forceNew and tableExists):
-        log(f'forceNew set to True, deleting previous table {tableName} and previous screening directory.')
+    if forceNew and tableExists:
+        log(
+            f"forceNew set to True, deleting previous table {tableName} and previous screening directory."
+        )
         sql.dropTable(connection, tableName)
         os.rmdir(name)
 
-    log(f'Writing to {database}')
-    log(f'Table name: {tableName}')
+    log(f"Writing to {database}")
+    log(f"Table name: {tableName}")
     n = len(set([char for char in style]))
-    threads = int(os.environ['OMP_NUM_THREADS'])
+    threads = int(os.environ["OMP_NUM_THREADS"])
     args = []
 
     if tableExists == False:
@@ -279,7 +328,9 @@ def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database
 
         # If partially populated table already exists, find empty records, read combinations and get IDs
     else:
-        df = pd.read_sql_query(f"select * from {tableName} where DurationMins = 0.0", connection)
+        df = pd.read_sql_query(
+            f"select * from {tableName} where DurationMins = 0.0", connection
+        )
         columns = list(df.columns)
         monomercols = [x for x in columns if x in list(string.ascii_uppercase)]
         monomers = []
@@ -289,18 +340,30 @@ def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database
         ids = df["id"].to_list()
 
     if len(combinations) == 0:
-        log('Quitting. Nothing to do.')
+        log("Quitting. Nothing to do.")
         exit()
     # Combining the arguments for getProps into iterables to be cycled with concurrent.futures.
     chunksize = int(math.ceil(len(combinations) / (parallel)))
     for idx, combination in zip(ids, combinations):
-        l = [idx, combination, style, length, solvent_params, threads, name, database, tableName]
-        if (tableExists == False):
+        l = [
+            idx,
+            combination,
+            style,
+            length,
+            solvent_params,
+            threads,
+            name,
+            database,
+            tableName,
+        ]
+        if tableExists == False:
             empty_data = []
             for c in combination:
-                empty_data.append(quotes(c  ))
+                empty_data.append(quotes(c))
             empty_data.insert(0, idx)
-            empty_data.append([length, "''"] + list(np.zeros(len(constants.DATACOLS)-1)))
+            empty_data.append(
+                [length, "''"] + list(np.zeros(len(constants.DATACOLS) - 1))
+            )
             sql.insertData(connection, flatten_list(empty_data), tableName, style)
         args.append(l)
 
@@ -316,4 +379,4 @@ def runScreen(name, monomer_list_raw, style, length, solvent, parallel, database
     lst = list(x)
     transpose = list(map(list, zip(*lst)))
     os.chdir(pwd)
-    log('Done.')
+    log("Done.")
